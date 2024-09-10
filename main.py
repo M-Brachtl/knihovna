@@ -41,16 +41,34 @@ def new_user():
     jdump(users, open("users.json", "w", encoding='utf-8'))
     return user
 
-
+admin = False
 command = 0
-while not command in (1, 2):
-    command = int(input("Vítejte v knihovně. [1 - přihlásit se, 2 - založit účet] "))
+while not command in (1,2,3):
+    command = int(input("Vítejte v knihovně. [1 - přihlásit se, 2 - založit účet, 3 - admin] "))
     if command == 1:
         try:
             id_user, now_user = login()
         except ValueError as error_message:
             command = 0
             print(error_message)
+    elif command == 3:
+        if input("Zadej vstupní kód administrátora: ") == "VelkyBratr1984GO":
+            print("Seznam uživatelů: ")
+            for users_id, users_data in users:
+                print("\t"+users_id+" "+users_data["name"])
+            while id_user == None:
+                try:
+                    id_user = int(input("Zadej ID uživatele, kterého chceš ovládat: "))
+                    now_user = users[id_user]
+                except ValueError:
+                    id_user = None
+                    print("Neplatné ID")
+                except IndexError:
+                    id_user = None
+                    print("Neplatné ID")
+            admin = True
+        else:
+            command = 0
     else:
         try:
             now_user = new_user()
@@ -67,9 +85,13 @@ if len(now_user["borrowed"]) == 0:
 
 # akce uživatele
 command = 0
-while not command in (1,2,3,4,5):
+if admin: print("JSI V REŽIMU ADMINISTRÁTORA")
+while not command in (1,2,3,4,5,6):
     try:
-        command = int(input("Možné akce? [1 - Zapůjčit knihu, 2 - Vrátit knihu, 3 - Prohlédnout si výběr knih, 4 - Ukončit program, 5 - Zrušit účet] "))
+        if admin:
+            command = int(input("Vyber akci [1 - Zapůjčit knihu, 2 - Vrátit knihu, 3 - Prohlédnout si výběr knih, 4 - Ukončit program, 5 - Zrušit účet] "))
+        else:
+            command = int(input("Vyber akci [1 - Zapůjčit knihu, 2 - Vrátit knihu, 3 - Prohlédnout si výběr knih, 4 - Ukončit program, 5 - Zrušit účet, 6 - přidat/odebrat knihy v knihovně] "))
     except ValueError:
         command = 0
     if command == 1:
@@ -132,9 +154,41 @@ while not command in (1,2,3,4,5):
         if now_user["borrowed"] != []:
             print("Nejdříve musíte vrátit všechny knihy")
         elif input("Opravdu chcete zrušit účet? [ano/ne] ") == "ano":
-            if input("Zadejte své jméno: ") == now_user["name"] and input("Zadejte heslo: ") == now_user["password"]:
+            if (input("Zadejte své jméno: ") == now_user["name"] and input("Zadejte heslo: ") == now_user["password"]) or admin:
                 users[id_user] = None
                 jdump(users,open("users.json","w",encoding="utf-8"))
                 print("Váš účet byl zrušen")
             else:
                 print("Špatné jméno nebo heslo")
+    elif command == 6:
+        isbn = input("Zadej ISBN existující nebo nové knihy: ")
+        try:
+            change = int(input(f"Zadej počet kusů knihy {books[isbn]}, které chceš přidat (pro odebrání napiš záporné číslo): "))
+            if books[isbn]["in_library"] + change < 0:
+                print("Nelze odebrat více knih, než je v knihovně")
+            else:
+                books[isbn]["in_library"] += change
+            if books[isbn]["in_library"] == 0 and input("Chceš knihu zcela odebrat ze seznamu? [ano/ne] ") == "ano":
+                in_borrows = False
+                for item in borrows:
+                    if item["book"] == isbn:
+                        in_borrows = True
+                        break
+                if in_borrows:
+                    print("Tuto knihu má někdo zapůjčenou, nelze ji smazat")
+                else:
+                    del books[isbn]
+                    jdump(books,open("books.json","w",encoding="utf-8"))
+                    print("Kniha byla smazána")
+            else:
+                jdump(books,open("books.json","w",encoding="utf-8"))
+                print(f"Počet kusů knihy {books[isbn]['title']} byl změněn")
+        except ValueError:
+            title = input("Zadej název knihy: ")
+            author = input("Zadej autora knihy: ")
+            in_library = int(input("Zadej počet kusů knihy: "))
+            books[isbn] = {"title": title, "author": author, "in_library": in_library}
+            jdump(books,open("books.json","w",encoding="utf-8"))
+            print("Kniha byla přidána")
+        print("")
+        command = 0
