@@ -67,15 +67,19 @@ if len(now_user["borrowed"]) == 0:
 
 # akce uživatele
 command = 0
-while not command in (1,2,3,4):
-    command = int(input("Možné akce? [1 - Zapůjčit knihu, 2 - Vrátit knihu, 3 - Prohlédnout si výběr knih, 4 - Ukončit program, 5 - Zrušit účet] "))
+while not command in (1,2,3,4,5):
+    try:
+        command = int(input("Možné akce? [1 - Zapůjčit knihu, 2 - Vrátit knihu, 3 - Prohlédnout si výběr knih, 4 - Ukončit program, 5 - Zrušit účet] "))
+    except ValueError:
+        command = 0
     if command == 1:
         print("Dostupné knihy:")
         available_books = []
+        if input("Chcete zobrazit všechny knihy? [ano/ne] ") == "ano": book_show = True
         for isbn, book in books.items():
             if isbn in now_user["borrowed"] or not book["in_library"]:
                 continue
-            print(f"\t{book['title']} - ({isbn})")
+            if book_show: print(f"\t{book['title']} - ({isbn})")
             available_books.append(isbn)
         my_isbn = input("Zadej ISBN knihy, kterou chceš zapůjčit: ")
         if my_isbn in available_books:
@@ -88,6 +92,7 @@ while not command in (1,2,3,4):
             print(f"Kniha {books[my_isbn]['title']} byla zapůjčena")
         else:
             print("Toto není validní ISBN")
+        print("")
         command = 0
     elif command == 2:
         print("Vámi zapůjčené knihy:")
@@ -107,4 +112,29 @@ while not command in (1,2,3,4):
             print(f"Kniha {books[my_isbn]['title']} byla vrácena")
         else:
             print("Toto není validní ISBN")
+        print("")
         command = 0
+    elif command == 3:
+        autor_q = input("Chcete filtrovat podle autora (1) nebo titulu (2)? ")
+        if autor_q == "1":
+            author = input("Zadej jméno autora nebo jeho část: ")
+            for isbn, book in books.items():
+                if author in book["author"]:
+                    print(f"\t{book['title']}, {book['author']} - ({isbn})")
+        else:
+            title = input("Zadej titul knihy nebo jeho část: ")
+            for isbn, book in books.items():
+                if title in book["title"]:
+                    print(f"\t{book['title']}, {book['author']} - ({isbn})")
+        print("")
+        command = 0
+    elif command == 5:
+        if now_user["borrowed"] != []:
+            print("Nejdříve musíte vrátit všechny knihy")
+        elif input("Opravdu chcete zrušit účet? [ano/ne] ") == "ano":
+            if input("Zadejte své jméno: ") == now_user["name"] and input("Zadejte heslo: ") == now_user["password"]:
+                users[id_user] = None
+                jdump(users,open("users.json","w",encoding="utf-8"))
+                print("Váš účet byl zrušen")
+            else:
+                print("Špatné jméno nebo heslo")
