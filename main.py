@@ -97,6 +97,7 @@ while not command in (1,2,3,4,5,6):
     if command == 1:
         print("Dostupné knihy:")
         available_books = []
+        book_show = False
         if input("Chcete zobrazit všechny knihy? [ano/ne] ") == "ano": book_show = True
         for isbn, book in books.items():
             if isbn in now_user["borrowed"] or not book["in_library"]:
